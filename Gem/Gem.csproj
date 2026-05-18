@@ -113,6 +113,7 @@
   <ItemGroup>
     <EmbeddedResource Include="scripts\MouseListening.js" />
     <EmbeddedResource Include="scripts\InsertAndSend.js" />
+	<EmbeddedResource Include="scripts\ResetFocus.js" />
     <EmbeddedResource Include="scripts\DefaultPrompts.ini" />
   </ItemGroup>
 </Project>

@@ -82,28 +82,7 @@ namespace Gem {
 
             webView.CoreWebView2.ContextMenuRequested += this.rmbClick;
 
-            webView.CoreWebView2.WebResourceResponseReceived += this.webView_WebResourceResponseReceived;
-
             webView.CoreWebView2.Navigate(homeUri);
-        }
-
-
-        private void webView_WebResourceResponseReceived(object sender, CoreWebView2WebResourceResponseReceivedEventArgs e) {
-            //authorization freezing fix
-            try {
-                if (e.Request.Uri.Contains("accounts.google.com/CheckCookie")) {
-                    // if the server returns a 302, then authorization was successful,
-                    // but WebView2 often gets stuck processing the session
-                    if (e.Response.StatusCode == 302) {
-                        this.BeginInvoke(new Action(() => {
-                            webView.CoreWebView2.Navigate(homeUri);
-                        }));
-                    }
-                }
-            }
-            catch (Exception ex) {
-                Helpers.LogError(ex);
-            }
         }
 
 
@@ -147,6 +126,12 @@ namespace Gem {
                 return;
 
             e.Handled = true;
+
+            try {
+                string resetScript = Helpers.GetEmbeddedScript("ResetFocus.js");
+                await webView.CoreWebView2.ExecuteScriptAsync(resetScript);
+            }
+            catch { }
 
             if (_currentMenu != null) {
                 _currentMenu.Dispose();
