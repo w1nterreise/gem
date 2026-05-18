@@ -14,7 +14,7 @@
 *   **Ctrl + ПКМ** — Открывает контекстное меню с вашими кастомными промптами-шаблонами из секции `[CTRL]`.
 *   **Shift + ПКМ** — Открывает контекстное меню с шаблонами из секции `[SHIFT]`.
 *   **Alt + ПКМ** — Открывает контекстное меню с шаблонами из секции `[ALT]`.
-*   **Ctrl + Shift + ПКМ** — **Хакорд разработчика**. Пропускает перехват интерфейса и открывает нативное инженерное меню Chromium (WebView2).
+*   **Ctrl + Shift + ПКМ** — Пропускает перехват интерфейса и открывает нативное инженерное меню Chromium (WebView2).
 
 ---
 
@@ -56,7 +56,7 @@ Interaction with the assistant is based on intercepting the right mouse click (`
 *   **Ctrl + RMB** — Opens a context menu with your custom prompt templates from the `[CTRL]` section.
 *   **Shift + RMB** — Opens a context menu with templates from the `[SHIFT]` section.
 *   **Alt + RMB** — Opens a context menu with templates from the `[ALT]` section.
-*   **Ctrl + Shift + RMB** — **Developer Cheat Code**. Bypasses interface interception and opens the native Chromium engineering menu (WebView2).
+*   **Ctrl + Shift + RMB** — Bypasses interface interception and opens the native Chromium engineering menu (WebView2).
 
 ---
 
