@@ -27,7 +27,7 @@
 2.  Разделение промптов внутри секций `[CTRL]`, `[SHIFT]` и `[ALT]` происходит строго с помощью **двух переносов строки (одной пустой строки)**.
 3.  Используйте плейсхолдер **`{clip}`** в любом месте вашего шаблона. При вызове команды Gem автоматически заменит его на актуальное содержимое буфера обмена. Если плейсхолдер отсутствует, команда выполнится как статичная, а буфер будет проигнорирован.
 
-Приложение поддерживает **Hot Reload**: кэш промптов в оперативной памяти обновляется автоматически «на лету» при любом сохранении файла `prompts.ini` (контролируется по времени изменения и размеру файла).
+Приложение поддерживает **Hot Reload**: кэш промптов в оперативной памяти обновляется автоматически «на лету» при любом сохранении файла `prompts.ini` (контролируется по времени изменения файла).
 
 ---
 
@@ -69,7 +69,7 @@ Upon its first launch, the application automatically creates a configuration fil
 2.  Prompts within the `[CTRL]`, `[SHIFT]`, and `[ALT]` sections are strictly separated using **two line breaks (one empty line)**.
 3.  Use the **`{clip}`** placeholder anywhere within your template. When a command is triggered, Gem will automatically replace it with the current contents of the clipboard. If the placeholder is omitted, the command will execute as a static prompt, and the clipboard content will be completely ignored.
 
-The application supports **Hot Reload**: the prompt cache in RAM updates automatically "on the fly" whenever the `prompts.ini` file is saved (monitored by file modification time and file size).
+The application supports **Hot Reload**: the prompt cache in RAM updates automatically "on the fly" whenever the `prompts.ini` file is saved (monitored by file modification time).
 
 ---
 
