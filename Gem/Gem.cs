@@ -51,7 +51,7 @@ namespace Gem {
             try {
                 string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 string cachePath = Path.Combine(localAppData, "Gem", "WebView2_Cache");
-
+                
                 var env = await CoreWebView2Environment.CreateAsync(null, cachePath);
                 await webView.EnsureCoreWebView2Async(env);
             }
@@ -81,7 +81,6 @@ namespace Gem {
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(mouseupListening);
 
             webView.CoreWebView2.ContextMenuRequested += this.rmbClick;
-
             webView.CoreWebView2.Navigate(homeUri);
         }
 
@@ -100,16 +99,13 @@ namespace Gem {
                 if (string.IsNullOrEmpty(message)) return;
 
                 if (message == "CLOSE_MENU") {
-                    if (_currentMenu != null) {
-                        _currentMenu.Close();
-                        _currentMenu = null;
-                    }
+                    this.DisposeCurrentMenu();
                     return;
                 }
 
                 if (message.StartsWith("AUTO_COPY|||")) {
                     string textToCopy = message.Substring("AUTO_COPY|||".Length);
-                    Clipboard.SetText(textToCopy);
+                    this.Invoke(new Action(() => Clipboard.SetText(textToCopy)));
                 }
             }
             catch (Exception ex) {
@@ -131,15 +127,21 @@ namespace Gem {
                 string resetScript = Helpers.GetEmbeddedScript("ResetFocus.js");
                 await webView.CoreWebView2.ExecuteScriptAsync(resetScript);
             }
-            catch { }
-
-            if (_currentMenu != null) {
-                _currentMenu.Dispose();
-                _currentMenu = null;
+            catch (Exception ex) {
+                Helpers.LogError(ex);
             }
 
-            string clipboardText = Clipboard.GetText();
-            if (string.IsNullOrEmpty(clipboardText)) return;
+            if (_currentMenu != null) this.DisposeCurrentMenu();
+
+            string clipboardText = "";
+            try {
+                if (Clipboard.ContainsText()) {
+                    clipboardText = Clipboard.GetText() ?? "";
+                }
+            }
+            catch (Exception ex) {
+                Helpers.LogError(ex);
+            }
 
             string targetSection = null;
             if (modifiers.HasFlag(Keys.Control)) targetSection = "CTRL";
@@ -148,6 +150,8 @@ namespace Gem {
 
             // terminal mode:
             if (targetSection == null) {
+                if (string.IsNullOrWhiteSpace(clipboardText))
+                    return;
                 string terminalPrompt = PromptManager.PrepareFullPrompt(clipboardText);
                 await this.SendPromptAsync(terminalPrompt);
                 return;
@@ -158,6 +162,12 @@ namespace Gem {
             if (!promptsDict.TryGetValue(targetSection, out string[] activePrompts) || activePrompts.Length == 0) return;
 
             _currentMenu = this.BuildContextMenu(activePrompts, clipboardText);
+
+            if (_currentMenu.Items.Count == 0) {
+                this.DisposeCurrentMenu();
+                return;
+            }
+
             _currentMenu.Show(Cursor.Position);
         }
 
@@ -165,12 +175,17 @@ namespace Gem {
         private ContextMenuStrip BuildContextMenu(string[] prompts, string clipboardText) {
 
             var menu = new ContextMenuStrip();
+            bool isClipboardEmpty = string.IsNullOrEmpty(clipboardText);
 
-            for (int i = 0; i < prompts.Length; i++) {
-                string promptTemplate = prompts[i];
-                string menuTitle = this.GetMenuTitle(promptTemplate, i);
+            foreach (string promptTemplate in prompts) {
 
-                var menuItem = new ToolStripMenuItem(menuTitle);
+                bool hasClip = promptTemplate.Contains(PromptManager.PLACEHOLDER);
+                if (hasClip && isClipboardEmpty)
+                    continue;
+
+                string menuTitle = this.GetMenuTitle(promptTemplate, hasClip);
+                var menuItem     = new ToolStripMenuItem(menuTitle);
+
                 menuItem.Click += async (s, ev) => {
                     string finalPrompt = PromptManager.PrepareFullPrompt(promptTemplate, clipboardText);
                     await this.SendPromptAsync(finalPrompt);
@@ -183,7 +198,7 @@ namespace Gem {
         }
 
 
-        private string GetMenuTitle(string promptTemplate, int index) {
+        private string GetMenuTitle(string promptTemplate, bool hasClip) {
 
             string firstLine = promptTemplate.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
@@ -192,9 +207,17 @@ namespace Gem {
                 firstLine = lineInfo.SubstringByTextElements(0, 42) + "...";
             }
 
-            bool hasClip = promptTemplate.Contains(PromptManager.PLACEHOLDER);
             string marker = hasClip ? " [clip]" : "";
-            return $"{index + 1}. {firstLine}{marker}";
+            return $"{firstLine}{marker}";
+        }
+
+
+        private void DisposeCurrentMenu() {
+            if (_currentMenu != null) {
+                _currentMenu.Close();
+                _currentMenu.Dispose();
+                _currentMenu = null;
+            }
         }
 
 
@@ -238,9 +261,9 @@ namespace Gem {
 
         private void btnHome_Click(object sender, EventArgs e) => webView.CoreWebView2.Navigate(homeUri);
 
-
         private void btnPin_CheckedChanged(object sender, EventArgs e) => this.TopMost = btnPin.Checked;
 
         #endregion
+
     }
 }
