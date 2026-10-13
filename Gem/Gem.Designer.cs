@@ -23,32 +23,24 @@
         /// содержимое этого метода с помощью редактора кода.
         /// </summary>
         private void InitializeComponent() {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Gem));
-            this.layout = new System.Windows.Forms.TableLayoutPanel();
+            this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.webView = new Microsoft.Web.WebView2.WinForms.WebView2();
             this.pnlControl = new System.Windows.Forms.Panel();
+            this.btnClearCache = new System.Windows.Forms.Button();
+            this.btnOpacity = new System.Windows.Forms.Button();
             this.btnPin = new System.Windows.Forms.CheckBox();
             this.btnHome = new System.Windows.Forms.Button();
-            this.layout.SuspendLayout();
+            this.statusStrip = new System.Windows.Forms.StatusStrip();
+            this.tsLblSTT = new System.Windows.Forms.ToolStripStatusLabel();
+            this.tsSpring = new System.Windows.Forms.ToolStripStatusLabel();
+            this.tsLblMemory = new System.Windows.Forms.ToolStripStatusLabel();
+            this.tsLblCache = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.webView)).BeginInit();
             this.pnlControl.SuspendLayout();
+            this.statusStrip.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // layout
-            // 
-            this.layout.ColumnCount = 1;
-            this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.layout.Controls.Add(this.webView, 0, 1);
-            this.layout.Controls.Add(this.pnlControl, 0, 0);
-            this.layout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.layout.Location = new System.Drawing.Point(0, 0);
-            this.layout.Name = "layout";
-            this.layout.RowCount = 2;
-            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.layout.Size = new System.Drawing.Size(800, 450);
-            this.layout.TabIndex = 0;
             // 
             // webView
             // 
@@ -56,10 +48,10 @@
             this.webView.CreationProperties = null;
             this.webView.DefaultBackgroundColor = System.Drawing.Color.White;
             this.webView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.webView.Location = new System.Drawing.Point(3, 33);
+            this.webView.Location = new System.Drawing.Point(0, 0);
             this.webView.Name = "webView";
-            this.webView.Size = new System.Drawing.Size(794, 414);
-            this.webView.TabIndex = 0;
+            this.webView.Size = new System.Drawing.Size(800, 450);
+            this.webView.TabIndex = 1;
             this.webView.ZoomFactor = 1D;
             this.webView.CoreWebView2InitializationCompleted += new System.EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs>(this.webView_CoreWebView2InitializationCompleted);
             this.webView.WebMessageReceived += new System.EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs>(this.webView_WebMessageReceived);
@@ -67,13 +59,36 @@
             // pnlControl
             // 
             this.pnlControl.BackColor = System.Drawing.SystemColors.Control;
+            this.pnlControl.Controls.Add(this.btnClearCache);
+            this.pnlControl.Controls.Add(this.btnOpacity);
             this.pnlControl.Controls.Add(this.btnPin);
             this.pnlControl.Controls.Add(this.btnHome);
-            this.pnlControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlControl.Location = new System.Drawing.Point(3, 3);
+            this.pnlControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.pnlControl.Location = new System.Drawing.Point(0, 0);
             this.pnlControl.Name = "pnlControl";
-            this.pnlControl.Size = new System.Drawing.Size(794, 24);
-            this.pnlControl.TabIndex = 1;
+            this.pnlControl.Size = new System.Drawing.Size(800, 24);
+            this.pnlControl.TabIndex = 2;
+            // 
+            // btnClearCache
+            // 
+            this.btnClearCache.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnClearCache.Image = global::Gem.Properties.Resources.clear;
+            this.btnClearCache.Location = new System.Drawing.Point(760, 0);
+            this.btnClearCache.Name = "btnClearCache";
+            this.btnClearCache.Size = new System.Drawing.Size(40, 24);
+            this.btnClearCache.TabIndex = 3;
+            this.btnClearCache.UseVisualStyleBackColor = true;
+            this.btnClearCache.Click += new System.EventHandler(this.btnClearCache_Click);
+            // 
+            // btnOpacity
+            // 
+            this.btnOpacity.Dock = System.Windows.Forms.DockStyle.Left;
+            this.btnOpacity.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.btnOpacity.Location = new System.Drawing.Point(80, 0);
+            this.btnOpacity.Name = "btnOpacity";
+            this.btnOpacity.Size = new System.Drawing.Size(40, 24);
+            this.btnOpacity.TabIndex = 2;
+            this.btnOpacity.UseVisualStyleBackColor = true;
             // 
             // btnPin
             // 
@@ -98,32 +113,89 @@
             this.btnHome.UseVisualStyleBackColor = true;
             this.btnHome.Click += new System.EventHandler(this.btnHome_Click);
             // 
+            // statusStrip
+            // 
+            this.statusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsLblSTT,
+            this.tsSpring,
+            this.tsLblMemory,
+            this.tsLblCache});
+            this.statusStrip.Location = new System.Drawing.Point(0, 428);
+            this.statusStrip.Name = "statusStrip";
+            this.statusStrip.Size = new System.Drawing.Size(800, 22);
+            this.statusStrip.TabIndex = 3;
+            this.statusStrip.Text = "statusStrip1";
+            // 
+            // tsLblSTT
+            // 
+            this.tsLblSTT.AutoToolTip = true;
+            this.tsLblSTT.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.tsLblSTT.Image = global::Gem.Properties.Resources.mic;
+            this.tsLblSTT.Name = "tsLblSTT";
+            this.tsLblSTT.Size = new System.Drawing.Size(20, 20);
+            this.tsLblSTT.Visible = false;
+            // 
+            // tsSpring
+            // 
+            this.tsSpring.AutoToolTip = true;
+            this.tsSpring.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsSpring.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.tsSpring.Name = "tsSpring";
+            this.tsSpring.Size = new System.Drawing.Size(785, 17);
+            this.tsSpring.Spring = true;
+            // 
+            // tsLblMemory
+            // 
+            this.tsLblMemory.AutoToolTip = true;
+            this.tsLblMemory.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsLblMemory.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.tsLblMemory.Name = "tsLblMemory";
+            this.tsLblMemory.Size = new System.Drawing.Size(0, 17);
+            // 
+            // tsLblCache
+            // 
+            this.tsLblCache.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tsLblCache.ForeColor = System.Drawing.SystemColors.GrayText;
+            this.tsLblCache.Name = "tsLblCache";
+            this.tsLblCache.Size = new System.Drawing.Size(0, 17);
+            // 
             // Gem
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 14F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Controls.Add(this.layout);
+            this.Controls.Add(this.statusStrip);
+            this.Controls.Add(this.pnlControl);
+            this.Controls.Add(this.webView);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Gem";
-            this.Text = "Gem";
-            this.Activated += new System.EventHandler(this.Gem_Activated);
-            this.Deactivate += new System.EventHandler(this.Gem_Deactivate);
+            this.Text = "Gem 1.1 - Aileron";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Gem_FormClosing);
             this.Load += new System.EventHandler(this.Gem_Load);
-            this.layout.ResumeLayout(false);
+            this.Resize += new System.EventHandler(this.Gem_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.webView)).EndInit();
             this.pnlControl.ResumeLayout(false);
+            this.statusStrip.ResumeLayout(false);
+            this.statusStrip.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
-
-        private System.Windows.Forms.TableLayoutPanel layout;
+        private System.Windows.Forms.ToolTip toolTips;
         private Microsoft.Web.WebView2.WinForms.WebView2 webView;
         private System.Windows.Forms.Panel pnlControl;
-        private System.Windows.Forms.Button btnHome;
+        private System.Windows.Forms.Button btnClearCache;
+        private System.Windows.Forms.Button btnOpacity;
         private System.Windows.Forms.CheckBox btnPin;
+        private System.Windows.Forms.Button btnHome;
+        private System.Windows.Forms.StatusStrip statusStrip;
+        private System.Windows.Forms.ToolStripStatusLabel tsLblSTT;
+        private System.Windows.Forms.ToolStripStatusLabel tsSpring;
+        private System.Windows.Forms.ToolStripStatusLabel tsLblMemory;
+        private System.Windows.Forms.ToolStripStatusLabel tsLblCache;
     }
 }
 

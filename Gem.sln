@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gem", "Gem\Gem.csproj", "{B
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{FF00846E-9F9B-471B-806C-9DC05A89FD1D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoiceModule", "VoiceModule\VoiceModule.csproj", "{0963A3AF-509D-4EDE-AB2A-E5A7229F2564}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{FF00846E-9F9B-471B-806C-9DC05A89FD1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF00846E-9F9B-471B-806C-9DC05A89FD1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF00846E-9F9B-471B-806C-9DC05A89FD1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0963A3AF-509D-4EDE-AB2A-E5A7229F2564}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0963A3AF-509D-4EDE-AB2A-E5A7229F2564}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0963A3AF-509D-4EDE-AB2A-E5A7229F2564}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0963A3AF-509D-4EDE-AB2A-E5A7229F2564}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

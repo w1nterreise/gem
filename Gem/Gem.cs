@@ -1,33 +1,58 @@
-﻿using Microsoft.Web.WebView2.Core;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 
 namespace Gem {
+
+    [System.ComponentModel.DesignerCategory("")]
     public partial class Gem : Form {
 
+        #region fields
 
-        #region private fields
+        private readonly static string homeUri             = "https://www.google.com/ai";
+        private readonly static string _localAppData       = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        private readonly static string _browserCachePath   = Path.Combine(_localAppData, "Gem", "WebView2_Cache");
+        private readonly JavaScriptSerializer _serializer  = new JavaScriptSerializer();
 
+        private ContextMenuStrip _currentMenu              = null;
 
-        private readonly string               homeUri     = "https://www.google.com/search?udm=50";
-        private readonly JavaScriptSerializer _serializer = new JavaScriptSerializer();
+        private readonly Timer _opacityTimer               = new Timer();
+        private readonly Timer _resizeAnimationTimer       = new Timer();
+        private readonly Timer _memoryTimer                = new Timer();
+        private readonly Timer _cacheTimer                 = new Timer();
+                                                          
+        private MouseHook      _mouseHook;                
+        private MouseHook      _opacityWheelHook;         
+        private MouseHook      _globalWheelHook;          
+                                                          
+        private KeyboardHook   _collapseHook;             
+        private KeyboardHook   _voiceKeyboardHook;
+                                                          
+        private object         _voiceRecognizerInstance;  
+        private MethodInfo     _voiceStartMethod;         
+        private MethodInfo     _voiceStopMethod;          
+        private bool           _isVoiceModuleReady         = false;
+        private bool           _isVoiceRecording           = false;
 
+        private const double   OPACITY_STEP                = 0.05;
+        private const double   OPACITY_OPAQUE              = 1.0;
+        private const int      ANIMATION_SPEED             = 4;
 
-        private ContextMenuStrip _currentMenu = null;
+        private double         _targetOpacity              = 1.0;      
+        private double         _opacityTransparent         = 0.6;
+               
+        private double _OpacityTransparent {
+            get => _opacityTransparent;
+            set => _opacityTransparent = Math.Max(0.2, Math.Min(value, 0.9));
+        }
 
-
-        //opacity animation:
-        private readonly Timer  _opacityTimer       = new Timer();
-        private          double _targetOpacity      = 1.0;
-        private const    double OPACITY_STEP        = 0.05;
-        private const    double OPACITY_TRANSPARENT = 0.4;
-        private const    double OPACITY_OPAQUE      = 1.0;
-
+        private int _targetWidth;
+        private int _targetHeight;
 
         #endregion
 
@@ -39,231 +64,165 @@ namespace Gem {
 
             InitializeComponent();
 
+            _targetWidth = this.Width;
+            _targetHeight   = this.Height;
+
+            btnOpacity.Text = _OpacityTransparent.ToString();
+
+            #region timers
+
             _opacityTimer.Interval = 16;
             _opacityTimer.Tick += OpacityTimer_Tick;
 
-            this.InitializeWebViewWithCustomCache();
+            _resizeAnimationTimer.Interval = 15;
+            _resizeAnimationTimer.Tick += ResizeAnimationTimer_Tick;
+
+            _memoryTimer.Interval = 2000;
+            _memoryTimer.Tick += MemoryTimer_Tick;
+            _memoryTimer.Start();
+
+            _cacheTimer.Interval = 120000;
+            _cacheTimer.Tick += CacheTimer_Tick;           
+            _cacheTimer.Start();
+
+            #endregion
+
+            #region hooks
+
+            _mouseHook = new MouseHook(this);
+            _mouseHook.MouseEnter += (s, e) => { OpacityTransition(OPACITY_OPAQUE); };
+            _mouseHook.MouseLeave += (s, e) => { OpacityTransition(_OpacityTransparent); };
+
+            _opacityWheelHook = new MouseHook(this.btnOpacity);
+
+            void ChangeOpacityTransparent (double d) {
+                _OpacityTransparent += d;
+                this.Opacity = _OpacityTransparent;
+                btnOpacity.Text = _OpacityTransparent.ToString();
+            };
+
+            _opacityWheelHook.MouseOverWheelUp   += (s, e) => { ChangeOpacityTransparent(0.05);  };
+            _opacityWheelHook.MouseOverWheelDown += (s, e) => { ChangeOpacityTransparent(-0.05); };
+
+            var settings = Properties.Settings.Default;
+
+            _collapseHook = new KeyboardHook(
+                targetControl:  this,
+                targetKey:      settings.CollapseKey,
+                requireCtrl:    false,
+                requireShift:   false,
+                requireAlt:     false,
+                trackDoubleTap: settings.CollapseRequireDouble
+            );
+
+            _collapseHook.HotKeyDoublePressed += (s, e) => { if (settings.CollapseRequireDouble)  ToggleWidgetCollapse(); };
+            _collapseHook.HotKeyPressed       += (s, e) => { if (!settings.CollapseRequireDouble) ToggleWidgetCollapse(); };
+
+            _globalWheelHook = new MouseHook(this);
+
+            int dWidth = Screen.FromControl(this).WorkingArea.Width / 32;
+
+            _globalWheelHook.MouseWheelUp   += (s, e) => HandleEdgeWheel(1);
+            _globalWheelHook.MouseWheelDown += (s, e) => HandleEdgeWheel(-1);
+
+            #endregion
+
+            #region tooltips
+
+            toolTips.AutoPopDelay = 5000;
+            toolTips.InitialDelay = 1000;
+            toolTips.ReshowDelay  = 500;
+            toolTips.ShowAlways   = true;
+
+            toolTips.SetToolTip(btnHome, "Home");
+            toolTips.SetToolTip(btnPin, "Pin");
+            toolTips.SetToolTip(btnOpacity, "Adjust opacity with the mouse wheel");
+            toolTips.SetToolTip(btnClearCache, "Clear cache");
+
+            string GetVoiceTooltipText() {
+
+                var parts    = new List<string>();
+
+                if (settings.SttRequireCtrl)  parts.Add("Ctrl");
+                if (settings.SttRequireAlt)   parts.Add("Alt");
+                if (settings.SttRequireShift) parts.Add("Shift");
+
+                parts.Add(settings.SttKey.ToString());
+                string shortcut = string.Join("+", parts);
+
+                return $"Hold {shortcut} to speak";
+            }
+
+            void ShowStatusToolTip(string text) {
+
+                Point localPos = this.PointToClient(Cursor.Position);
+                localPos.Offset(15, 15);
+                toolTips.Show(text, this, localPos);
+            }
+
+            tsLblSTT   .MouseEnter += (s, e) => ShowStatusToolTip(GetVoiceTooltipText());
+            tsLblMemory.MouseEnter += (s, e) => ShowStatusToolTip("Memory usage: main process + WebView2");
+            tsLblCache .MouseEnter += (s, e) => ShowStatusToolTip(_browserCachePath);
+
+            tsLblSTT   .MouseLeave += (s, e) => toolTips.Hide(this);
+            tsLblMemory.MouseLeave += (s, e) => toolTips.Hide(this);
+            tsLblCache .MouseLeave += (s, e) => toolTips.Hide(this);
+
+            #endregion
+
         }
 
 
-        private async void InitializeWebViewWithCustomCache() {
+        private async void Gem_Load(object sender, EventArgs e) {
 
-            try {
-                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string cachePath = Path.Combine(localAppData, "Gem", "WebView2_Cache");
-                
-                var env = await CoreWebView2Environment.CreateAsync(null, cachePath);
-                await webView.EnsureCoreWebView2Async(env);
-            }
-            catch (Exception ex) {
-                Helpers.LogError(ex);
-            }
-        }
-
-
-        private void Gem_Load(object sender, EventArgs e) {
-
-            var area = Screen.FromControl(this).WorkingArea;
-            this.Width = (int)(area.Width * 0.42);
-            this.Left = area.Right - this.Width + SystemInformation.FrameBorderSize.Width * 2;
-            this.Top = area.Y;
+            var area    = Screen.FromControl(this).WorkingArea;
+            this.Width  = (int)(area.Width * 0.42);
+            this.Left   = area.Right - this.Width + SystemInformation.FrameBorderSize.Width * 2;
+            this.Top    = area.Y;
             this.Height = area.Height + SystemInformation.FrameBorderSize.Height * 2;
+
+            await this.InitializeWebViewWithCustomCache();
+            await this.RunCacheCalculationAsync();
+            await this.InitVoiceModule();
         }
-
-
-        private async void webView_CoreWebView2InitializationCompleted(object sender, CoreWebView2InitializationCompletedEventArgs e) {
-
-            if (!e.IsSuccess) return;
-
-            webView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
-
-            string mouseupListening = Helpers.GetEmbeddedScript("MouseListening.js");
-            await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(mouseupListening);
-
-            webView.CoreWebView2.ContextMenuRequested += this.rmbClick;
-            webView.CoreWebView2.Navigate(homeUri);
-        }
-
 
         #endregion
 
 
-        #region major controls
+        #region dispose
 
-
-        private void webView_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e) {
-
-            try {
-                string message = e.TryGetWebMessageAsString();
-
-                if (string.IsNullOrEmpty(message)) return;
-
-                if (message == "CLOSE_MENU") {
-                    this.DisposeCurrentMenu();
-                    return;
-                }
-
-                if (message.StartsWith("AUTO_COPY|||")) {
-                    string textToCopy = message.Substring("AUTO_COPY|||".Length);
-                    this.Invoke(new Action(() => Clipboard.SetText(textToCopy)));
-                }
-            }
-            catch (Exception ex) {
-                Helpers.LogError(ex);
-            }
-        }
-
-
-        private async void rmbClick(object sender, CoreWebView2ContextMenuRequestedEventArgs e) {
-
-            var modifiers = Control.ModifierKeys;
-
-            if (modifiers.HasFlag(Keys.Control) && modifiers.HasFlag(Keys.Shift))
-                return;
-
-            e.Handled = true;
+        private void Gem_FormClosing(object sender, FormClosingEventArgs e) {
 
             try {
-                string resetScript = Helpers.GetEmbeddedScript("ResetFocus.js");
-                await webView.CoreWebView2.ExecuteScriptAsync(resetScript);
-            }
-            catch (Exception ex) {
-                Helpers.LogError(ex);
-            }
 
-            if (_currentMenu != null) this.DisposeCurrentMenu();
-
-            string clipboardText = "";
-            try {
-                if (Clipboard.ContainsText()) {
-                    clipboardText = Clipboard.GetText() ?? "";
-                }
-            }
-            catch (Exception ex) {
-                Helpers.LogError(ex);
-            }
-
-            string targetSection = null;
-            if (modifiers.HasFlag(Keys.Control)) targetSection = "CTRL";
-            else if (modifiers.HasFlag(Keys.Shift)) targetSection = "SHIFT";
-            else if (modifiers.HasFlag(Keys.Alt)) targetSection = "ALT";
-
-            // terminal mode:
-            if (targetSection == null) {
-                if (string.IsNullOrWhiteSpace(clipboardText))
-                    return;
-                string terminalPrompt = PromptManager.PrepareFullPrompt(clipboardText);
-                await this.SendPromptAsync(terminalPrompt);
-                return;
-            }
-
-            // template menu mode:
-            var promptsDict = PromptManager.GetPrompts();
-            if (!promptsDict.TryGetValue(targetSection, out string[] activePrompts) || activePrompts.Length == 0) return;
-
-            _currentMenu = this.BuildContextMenu(activePrompts, clipboardText);
-
-            if (_currentMenu.Items.Count == 0) {
-                this.DisposeCurrentMenu();
-                return;
-            }
-
-            _currentMenu.Show(Cursor.Position);
-        }
-
-
-        private ContextMenuStrip BuildContextMenu(string[] prompts, string clipboardText) {
-
-            var menu = new ContextMenuStrip();
-            bool isClipboardEmpty = string.IsNullOrEmpty(clipboardText);
-
-            foreach (string promptTemplate in prompts) {
-
-                bool hasClip = promptTemplate.Contains(PromptManager.PLACEHOLDER);
-                if (hasClip && isClipboardEmpty)
-                    continue;
-
-                string menuTitle = this.GetMenuTitle(promptTemplate, hasClip);
-                var menuItem     = new ToolStripMenuItem(menuTitle);
-
-                menuItem.Click += async (s, ev) => {
-                    string finalPrompt = PromptManager.PrepareFullPrompt(promptTemplate, clipboardText);
-                    await this.SendPromptAsync(finalPrompt);
-                };
-
-                menu.Items.Add(menuItem);
-            }
-
-            return menu;
-        }
-
-
-        private string GetMenuTitle(string promptTemplate, bool hasClip) {
-
-            string firstLine = promptTemplate.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
-
-            var lineInfo = new System.Globalization.StringInfo(firstLine);
-            if (lineInfo.LengthInTextElements > 45) {
-                firstLine = lineInfo.SubstringByTextElements(0, 42) + "...";
-            }
-
-            string marker = hasClip ? " [clip]" : "";
-            return $"{firstLine}{marker}";
-        }
-
-
-        private void DisposeCurrentMenu() {
-            if (_currentMenu != null) {
-                _currentMenu.Close();
-                _currentMenu.Dispose();
-                _currentMenu = null;
-            }
-        }
-
-
-        private async Task SendPromptAsync(string prompt) {
-
-            string safePrompt     = _serializer.Serialize(prompt);
-            string scriptTemplate = Helpers.GetEmbeddedScript("InsertAndSend.js");
-            string finalScript    = scriptTemplate.Replace("/*PLACEHOLDER*/", safePrompt);
-
-            await webView.CoreWebView2.ExecuteScriptAsync(finalScript);
-        }
-
-
-        #endregion
-
-
-        #region minor controls and animation
-
-
-        private void OpacityTransition(double targetOpacity) {
-
-            _targetOpacity = targetOpacity;
-            _opacityTimer.Start();
-        }
-
-
-        private void Gem_Activated(object sender, EventArgs e) => OpacityTransition(OPACITY_OPAQUE);
-        private void Gem_Deactivate(object sender, EventArgs e) => OpacityTransition(OPACITY_TRANSPARENT);
-
-        private void OpacityTimer_Tick(object sender, EventArgs e) {
-
-            if (Math.Abs(this.Opacity - _targetOpacity) < 0.001) {
                 _opacityTimer.Stop();
-                return;
-            }
+                _opacityTimer.Dispose();
 
-            int direction = this.Opacity < _targetOpacity ? 1 : -1;
-            this.Opacity += OPACITY_STEP * direction;
+                _resizeAnimationTimer.Stop();
+                _resizeAnimationTimer.Dispose();
+
+                _memoryTimer.Stop();
+                _memoryTimer.Dispose();
+
+                _cacheTimer.Stop();
+                _cacheTimer.Dispose();
+
+                _mouseHook?.Dispose();
+                _opacityWheelHook?.Dispose();
+                _globalWheelHook?.Dispose();
+
+                _voiceKeyboardHook?.Dispose();
+                _collapseHook?.Dispose();
+
+                if (_voiceRecognizerInstance is IDisposable disposableVoice) {
+                    disposableVoice.Dispose();
+                }
+            }
+            catch (Exception ex) {
+                Helpers.LogError(ex);
+            }
         }
 
-
-        private void btnHome_Click(object sender, EventArgs e) => webView.CoreWebView2.Navigate(homeUri);
-
-        private void btnPin_CheckedChanged(object sender, EventArgs e) => this.TopMost = btnPin.Checked;
-
         #endregion
-
     }
 }

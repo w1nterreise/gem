@@ -1,7 +1,27 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Gem.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="SttKey" Type="System.Windows.Forms.Keys" Scope="Application">
+      <Value Profile="(Default)">Oemtilde</Value>
+    </Setting>
+    <Setting Name="SttRequireCtrl" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="SttRequireAlt" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SttRequireShift" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="CollapseKey" Type="System.Windows.Forms.Keys" Scope="Application">
+      <Value Profile="(Default)">ShiftKey</Value>
+    </Setting>
+    <Setting Name="CollapseRequireDouble" Type="System.Boolean" Scope="Application">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DoubleTapInterval" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">400</Value>
+    </Setting>
+  </Settings>
 </SettingsFile>
